@@ -1,0 +1,4 @@
+- git:
+    local-name: ros_numpy
+    uri: https://github.com/HiroIshida/ros_numpy.git
+    version: master
