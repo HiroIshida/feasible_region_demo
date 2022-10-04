@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import time
 from dataclasses import dataclass
 
@@ -36,50 +37,56 @@ def find_circle(X: np.ndarray) -> Circle:
     return Circle(res.x[:2], res.x[2])
 
 
-rospy.init_node("bowl_center_detector")
-listener = tf.TransformListener()
-pub = rospy.Publisher("bowl_center", PointStamped)
+class BowlCenterFinder:
+    listener: tf.TransformListener
+    publisher: rospy.Publisher
+
+    def __init__(self):
+        self.listener = tf.TransformListener()
+        self.publisher = rospy.Publisher("bowl_center", PointStamped)
+        rospy.Subscriber("/hsi_filter/output", PointCloud2, self.callback)
+
+    def callback(self, msg: PointCloud2):
+        target = "base_link"
+        source = "head_mount_kinect_rgb_optical_frame"
+        while True:
+            try:
+                (trans, rot) = self.listener.lookupTransform(target, source, rospy.Time(0))
+                break
+
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                pass
+
+        pose = Pose()
+        pose.position.x, pose.position.y, pose.position.z = trans
+        pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = rot
+        X_source = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)  # type: ignore
+        transform = CoordinateTransform.from_ros_pose(pose)
+        X = transform(X_source)
+        center = np.mean(X, axis=0)
+
+        r_filter = 0.15
+        is_inside = np.sum((X[:, :2] - center[:2]) ** 2, axis=1) < r_filter**2
+        X_bowl = X[is_inside]
+        h_bowl_max = np.max(X_bowl[:, 2])
+
+        is_upper = X_bowl[:, 2] > (h_bowl_max - 0.02)
+        X_bowl_upper = X_bowl[is_upper]
+        circle = find_circle(X_bowl_upper[:, :2])
+
+        center = np.hstack([circle.center, h_bowl_max])
+
+        point = PointStamped()
+        pos = point.point
+        pos.x, pos.y, pos.z = center
+
+        point.header = msg.header
+        point.header.frame_id = target
+        self.publisher.publish(point)
+        rospy.loginfo("publish")
 
 
-def callback(msg: PointCloud2):
-    target = "base_link"
-    source = "head_mount_kinect_rgb_optical_frame"
-    while True:
-        try:
-            (trans, rot) = listener.lookupTransform(target, source, rospy.Time(0))
-            break
-
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            pass
-
-    pose = Pose()
-    pose.position.x, pose.position.y, pose.position.z = trans
-    pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = rot
-    X_source = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)  # type: ignore
-    transform = CoordinateTransform.from_ros_pose(pose)
-    X = transform(X_source)
-    center = np.mean(X, axis=0)
-
-    r_filter = 0.15
-    is_inside = np.sum((X[:, :2] - center[:2]) ** 2, axis=1) < r_filter**2
-    X_bowl = X[is_inside]
-    h_bowl_max = np.max(X_bowl[:, 2])
-
-    is_upper = X_bowl[:, 2] > (h_bowl_max - 0.02)
-    X_bowl_upper = X_bowl[is_upper]
-    circle = find_circle(X_bowl_upper[:, :2])
-
-    center = np.hstack([circle.center, h_bowl_max])
-
-    point = PointStamped()
-    pos = point.point
-    pos.x, pos.y, pos.z = center
-
-    point.header = msg.header
-    point.header.frame_id = target
-    pub.publish(point)
-    rospy.loginfo("publish")
-
-
-rospy.Subscriber("/hsi_filter/output", PointCloud2, callback)
-rospy.spin()
+if __name__ == "__main__":
+    rospy.init_node("bowl_center_detector")
+    finder = BowlCenterFinder()
+    rospy.spin()
