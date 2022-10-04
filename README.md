@@ -1,7 +1,7 @@
 ```bash
 mkdir -p ~/feasible_region_ws/src
 cd ~/feasible_region_ws/src
-git clone https://github.com/HiroIshida/feasible_region_demo.git
+git clone git@github.com:HiroIshida/feasible_region_demo.git
 wstool init
 wstool merge feasible_region_demo/.rosinstall
 wstool update

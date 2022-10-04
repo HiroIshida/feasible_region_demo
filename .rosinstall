@@ -2,3 +2,7 @@
     local-name: ros_numpy
     uri: https://github.com/HiroIshida/ros_numpy.git
     version: master
+- git:
+    local-name: mohou_ros
+    uri: git@github.com:HiroIshida/mohou_ros.git
+    version: master
