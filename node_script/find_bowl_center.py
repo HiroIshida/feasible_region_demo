@@ -6,7 +6,7 @@ import numpy as np
 import ros_numpy
 import rospy
 import tf
-from geometry_msgs.msg import PointStamped, Pose
+from geometry_msgs.msg import Pose, PoseStamped
 from mohou_ros_utils.utils import CoordinateTransform
 from scipy.optimize import minimize
 from sensor_msgs.msg import PointCloud2
@@ -40,10 +40,13 @@ def find_circle(X: np.ndarray) -> Circle:
 class BowlCenterFinder:
     listener: tf.TransformListener
     publisher: rospy.Publisher
+    n_window: int
+    center_list = []
 
-    def __init__(self):
+    def __init__(self, n_window: int = 10):
         self.listener = tf.TransformListener()
-        self.publisher = rospy.Publisher("bowl_center", PointStamped)
+        self.publisher = rospy.Publisher("bowl_center", PoseStamped)
+        self.n_window = n_window
         rospy.Subscriber("/hsi_filter/output", PointCloud2, self.callback)
 
     def callback(self, msg: PointCloud2):
@@ -74,19 +77,26 @@ class BowlCenterFinder:
         X_bowl_upper = X_bowl[is_upper]
         circle = find_circle(X_bowl_upper[:, :2])
 
-        center = np.hstack([circle.center, h_bowl_max])
+        self.center_list.append(circle.center)
+        self.center_list = self.center_list[-self.n_window :]
+        center_mean = sum(self.center_list) / len(self.center_list)
 
-        point = PointStamped()
-        pos = point.point
-        pos.x, pos.y, pos.z = center
+        ret_center = np.hstack([center_mean, h_bowl_max])
 
-        point.header = msg.header
-        point.header.frame_id = target
-        self.publisher.publish(point)
+        pose = PoseStamped()
+        pos = pose.pose.position
+        pos.x, pos.y, pos.z = ret_center
+
+        ori = pose.pose.orientation
+        ori.x, ori.y, ori.z, ori.w = (0, 0, 0, 1.0)
+
+        pose.header = msg.header
+        pose.header.frame_id = target
+        self.publisher.publish(pose)
         rospy.loginfo("publish")
 
 
 if __name__ == "__main__":
-    rospy.init_node("bowl_center_detector")
+    rospy.init_node("bowl_center_finder")
     finder = BowlCenterFinder()
     rospy.spin()

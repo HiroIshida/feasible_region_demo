@@ -1,5 +1,7 @@
 <launch>
-  <arg name="input_cloud" default="/kinect_head/depth_registered/half/points"/>
+  <arg name="input_cloud" default="/kinect_head/depth_registered/quater/points"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find feasible_region_demo)/conf.rviz"/>
+  <node pkg="feasible_region_demo" type="find_bowl_center.py" name="bowl_center_finder"/>
 
   <node name="boxfilter_pre" pkg="nodelet" type="nodelet"
     args="standalone jsk_pcl/AttentionClipper"

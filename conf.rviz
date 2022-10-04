@@ -7,7 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /PointCloud21
-        - /PointStamped1
+        - /Pose1
       Splitter Ratio: 0.5
     Tree Height: 549
   - Class: rviz/Selection
@@ -547,13 +547,18 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Alpha: 1
-      Class: rviz/PointStamped
-      Color: 204; 41; 204
+      Axes Length: 0.10000000149011612
+      Axes Radius: 0.019999999552965164
+      Class: rviz/Pose
+      Color: 255; 25; 0
       Enabled: true
-      History Length: 1
-      Name: PointStamped
-      Queue Size: 100
-      Radius: 0.009999999776482582
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: Pose
+      Queue Size: 10
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Axes
       Topic: /bowl_center
       Unreliable: false
       Value: true
@@ -585,7 +590,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.9484844207763672
+      Distance: 2.5459766387939453
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -601,9 +606,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.000397801399231
+      Pitch: 1.1153976917266846
       Target Frame: <Fixed Frame>
-      Yaw: 0.07039958238601685
+      Yaw: 0.4254060387611389
     Saved: ~
 Window Geometry:
   Displays:
